@@ -8,9 +8,6 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
-
-@Service
 public class AccountServiceImpl implements AccountService {
 
     private final AccountDAO accountDAO;
@@ -25,7 +22,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Accounts getAccountById(int accountId) throws SQLException  {
+    public Accounts getAccountById(int accountId) throws SQLException {
         return accountDAO.getAccountById(accountId);
     }
 

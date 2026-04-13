@@ -17,8 +17,8 @@ public class CustomerDAOImpl implements CustomerDAO {
         List<Customers> result = new ArrayList<>();
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 result.add(mapCustomer(rs));
@@ -33,7 +33,7 @@ public class CustomerDAOImpl implements CustomerDAO {
         Customers c = null;
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, customerId);
 
@@ -51,7 +51,7 @@ public class CustomerDAOImpl implements CustomerDAO {
         final String sql = "INSERT INTO customers (name, email, username, password, role) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, customers.getName());
             ps.setString(2, customers.getEmail());
@@ -84,8 +84,7 @@ public class CustomerDAOImpl implements CustomerDAO {
     }
 
     /**
-     * NOTE: This method really belongs in TransactionDAOImpl, but keeping your
-     * existing
+     * NOTE: This method really belongs in TransactionDAOImpl, but keeping your existing
      * method intact here since it may be referenced elsewhere in your code.
      */
     public void updateTransaction(Transactions transaction) throws SQLException {
@@ -94,7 +93,7 @@ public class CustomerDAOImpl implements CustomerDAO {
                 "WHERE transaction_id = ?";
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, transaction.getAccountId());
             ps.setDouble(2, transaction.getAmount());
@@ -116,7 +115,7 @@ public class CustomerDAOImpl implements CustomerDAO {
         final String sql = "DELETE FROM customers WHERE customer_id = ?";
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, customerId);
             ps.executeUpdate(); // DML -> executeUpdate()
@@ -124,13 +123,14 @@ public class CustomerDAOImpl implements CustomerDAO {
     }
 
     public CustomerAccountInfo getCustomerAccountInfo(int customerId) throws SQLException {
-        final String sql = "SELECT c.customer_id, c.name, c.email, a.account_id, a.balance " +
-                "FROM customers c LEFT JOIN accounts a ON c.customer_id = a.customer_id " +
-                "WHERE c.customer_id = ? " +
-                "ORDER BY a.account_id ASC";
+        final String sql =
+            "SELECT c.customer_id, c.name, c.email, a.account_id, a.balance " +
+            "FROM customers c LEFT JOIN accounts a ON c.customer_id = a.customer_id " +
+            "WHERE c.customer_id = ? " +
+            "ORDER BY a.account_id ASC";
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, customerId);
 
@@ -166,7 +166,7 @@ public class CustomerDAOImpl implements CustomerDAO {
         final String sql = "UPDATE customers SET name = ?, email = ?, username = ?, password = ?, role = ? WHERE customer_id = ?";
 
         try (Connection conn = DatabaseConnectionManager.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, customers.getName());
             ps.setString(2, customers.getEmail());
