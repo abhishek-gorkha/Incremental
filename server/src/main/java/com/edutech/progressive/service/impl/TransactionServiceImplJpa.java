@@ -1,91 +1,84 @@
 package com.edutech.progressive.service.impl;
 
+
 import com.edutech.progressive.entity.Accounts;
 import com.edutech.progressive.entity.Transactions;
+import com.edutech.progressive.exception.AccountNotFoundException;
+import com.edutech.progressive.exception.OutOfBalanceException;
+import com.edutech.progressive.exception.WithdrawalLimitException;
 import com.edutech.progressive.repository.AccountRepository;
 import com.edutech.progressive.repository.TransactionRepository;
 import com.edutech.progressive.service.TransactionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Service
 public class TransactionServiceImplJpa implements TransactionService {
 
-    private final TransactionRepository transactionRepository;
-    private final AccountRepository accountRepository;
-
-    public TransactionServiceImplJpa(TransactionRepository transactionRepository,
-                                     AccountRepository accountRepository) {
+    private TransactionRepository transactionRepository;
+    private AccountRepository accountRepository;
+    @Autowired
+    public TransactionServiceImplJpa(TransactionRepository transactionRepository,AccountRepository accountRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
     }
 
     @Override
-    public List<Transactions> getAllTransactions() throws SQLException {
+    public List<Transactions> getAllTransactions() {
         return transactionRepository.findAll();
     }
 
     @Override
-    public Transactions getTransactionById(int transactionId) throws SQLException {
+    public Transactions getTransactionById(int transactionId) {
         return transactionRepository.findById(transactionId).orElse(null);
     }
 
     @Override
     public int addTransaction(Transactions transaction) throws SQLException {
-        // Ensure timestamp is set
-        if (transaction.getTransactionDate() == null) {
-            transaction.setTransactionDate(new Date());
+        Accounts account = accountRepository.findByAccountId(transaction.getAccounts().getAccountId());
+        double balance = account.getBalance();
+        if (transaction.getAmount() > 30000 && transaction.getTransactionType().equalsIgnoreCase("debit")) {
+            throw new WithdrawalLimitException("Exceeded the withdrawal limit.");
         }
-
-        // Persist the transaction first (so id is generated)
-        Transactions saved = transactionRepository.save(transaction);
-
-        // Update account balance (basic rules for Day 8; Day 9 adds validations/exceptions)
-        Accounts acc = accountRepository.findByAccountId(transaction.getAccountId());
-        if (acc != null) {
-            String type = transaction.getTransactionType() != null
-                    ? transaction.getTransactionType().trim().toUpperCase()
-                    : "";
-
-            double newBalance = acc.getBalance();
-            if ("DEPOSIT".equals(type)) {
-                newBalance += transaction.getAmount();
-            } else if ("WITHDRAWAL".equals(type)) {
-                newBalance -= transaction.getAmount();
-            }
-            acc.setBalance(newBalance);
-            accountRepository.save(acc);
+        if (balance < transaction.getAmount() && transaction.getTransactionType().equalsIgnoreCase("debit")) {
+            throw new OutOfBalanceException("Transaction amount exceeds the total balance available in the account.");
         }
-
-        return saved.getTransactionId();
+        if (transaction.getTransactionType().equalsIgnoreCase("credit")) {
+            balance = balance + transaction.getAmount();
+        }
+        else {
+            balance = balance - transaction.getAmount();
+        }
+        account.setBalance(balance);
+        accountRepository.save(account);
+        return transactionRepository.save(transaction).getTransactionId();
     }
 
     @Override
-    public void updateTransaction(Transactions transaction) throws SQLException {
-        // NOTE: Day 8 does not require re-adjusting account balance on update.
-        // Persist the new values as-is.
-        if (transaction.getTransactionDate() == null) {
-            transaction.setTransactionDate(new Date());
-        }
+    public void updateTransaction(Transactions transaction) {
         transactionRepository.save(transaction);
     }
 
     @Override
-    public void deleteTransaction(int transactionId) throws SQLException {
+    public void deleteTransaction(int transactionId) {
         transactionRepository.deleteById(transactionId);
     }
 
     @Override
     public List<Transactions> getTransactionsByCustomerId(int customerId) throws SQLException {
-        List<Transactions> result = new ArrayList<>();
-        List<Accounts> accounts = accountRepository.findByCustomerId(customerId);
-        for (Accounts a : accounts) {
-            result.addAll(transactionRepository.findByAccountId(a.getAccountId()));
+        List<Accounts> accountsList = accountRepository.getAccountsByCustomerCustomerId(customerId);
+        List<Transactions> allTransactions = new ArrayList<>();
+        if (accountsList.isEmpty()) {
+            throw new AccountNotFoundException("No accounts found linked with this customer");
         }
-        return result;
+        for (Accounts account : accountsList) {
+            List<Transactions> transactionsForAccount = transactionRepository.findByAccountsAccountId(account.getAccountId());
+            allTransactions.addAll(transactionsForAccount);
+        }
+        return allTransactions;
     }
 }
