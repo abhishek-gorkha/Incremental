@@ -10,6 +10,7 @@ import com.edutech.progressive.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -23,6 +24,9 @@ public class CustomerServiceImplJpa implements CustomerService {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired(required = false)
+    PasswordEncoder passwordEncoder;
 
     private final CustomerRepository customerRepository;
 
@@ -43,18 +47,28 @@ public class CustomerServiceImplJpa implements CustomerService {
 
     @Override
     public int addCustomer(Customers customers) throws SQLException {
-        Customers existingCustomer = customerRepository.findByEmail(customers.getEmail());
-        if (existingCustomer != null) {
+        if (customerRepository.existsByEmail(customers.getEmail())) {
             throw new CustomerAlreadyExistsException("Customer with give email already exists : " + customers.getEmail());
+        }
+        if (customerRepository.existsByUsername(customers.getUsername())) {
+            throw new CustomerAlreadyExistsException("Customer with given username already exists : " + customers.getUsername());
+        }
+        if (passwordEncoder != null && customers.getPassword() != null && !customers.getPassword().isBlank()) {
+            customers.setPassword(passwordEncoder.encode(customers.getPassword()));
         }
         return customerRepository.save(customers).getCustomerId();
     }
 
     @Override
     public void updateCustomer(Customers customers) throws SQLException {
+        Customers currentCustomer = customerRepository.findByCustomerId(customers.getCustomerId());
         Customers existingCustomer = customerRepository.findByEmail(customers.getEmail());
-        if (existingCustomer != null && customers.getCustomerId() != existingCustomer.getCustomerId()) {
+        if (existingCustomer != null && currentCustomer != null && customers.getCustomerId() != existingCustomer.getCustomerId()) {
             throw new CustomerAlreadyExistsException("Customer with give email already exists : " + customers.getEmail());
+        }
+        Customers existingUsername = customerRepository.findByUsername(customers.getUsername());
+        if (existingUsername != null && currentCustomer != null && customers.getCustomerId() != existingUsername.getCustomerId()) {
+            throw new CustomerAlreadyExistsException("Customer with given username already exists : " + customers.getUsername());
         }
         if (!customers.getRole().isBlank()) {
             customerRepository.save(customers);

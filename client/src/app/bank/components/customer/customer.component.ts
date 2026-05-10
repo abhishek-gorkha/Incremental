@@ -44,6 +44,11 @@ export class CustomersComponent implements OnInit {
     return null;
   }
 
+  private getErrorMessage(error: any): string {
+    const message = error?.error?.message ?? error?.error ?? error?.message;
+    return typeof message === 'string' ? message : 'Please fill out all required fields correctly.';
+  }
+
   onSubmit(): void {
     if (this.customerForm.valid) {
       this.banksService.addCustomer(this.customerForm.value).subscribe({
@@ -53,7 +58,9 @@ export class CustomersComponent implements OnInit {
           this.customerError = '';
           this.customerForm.reset();
         },
-        error: (error) => this.customerError = error.error
+        // error: (error) => this.customerError = error.error
+          error: (error) => this.customerError = this.getErrorMessage(error)
+     
       });
     } else {
       this.customerError = 'Please fill out all required fields correctly.';

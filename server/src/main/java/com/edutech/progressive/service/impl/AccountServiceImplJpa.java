@@ -37,7 +37,7 @@ public class AccountServiceImplJpa implements AccountService {
     }
 
     @Override
-    public Accounts getAccountById(int accountId)throws AccountNotFoundException {
+    public Accounts getAccountById(int accountId) {
         Optional<Accounts> accounts = accountRepository.findById(accountId);
         if (accounts.isPresent()) {
             return accounts.get();

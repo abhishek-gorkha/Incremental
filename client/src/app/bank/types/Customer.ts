@@ -15,7 +15,3 @@ export class Customer {
         this.role = data.role;
     }
 }
-
-
-
-
